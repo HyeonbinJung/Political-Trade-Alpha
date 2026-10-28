@@ -1,0 +1,56 @@
+name: Political Trade Alpha paper monitor
+
+on:
+  schedule:
+    # UTC alternatives for US Eastern daylight / standard time.
+    # Python verifies local NY clock to prevent duplicate runs.
+    - cron: "0 13 * * *"
+    - cron: "0 14 * * *"
+    - cron: "59 15 * * *"
+    - cron: "59 16 * * *"
+    - cron: "0 18 * * *"
+    - cron: "0 19 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "political_trade_alpha/**"
+      - "tests/**"
+      - "data/verified_trades.json"
+      - ".github/workflows/monitor.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: political-trade-alpha-paper-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      SCHEDULED_CRON: ${{ github.event.schedule }}
+      PAPER_EQUITY_USD: "10000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test sizing and DST behavior
+        run: python -m unittest discover -s tests -v
+      - name: Build simulated signal and headline report
+        run: python -m political_trade_alpha.cli
+      - name: Save paper report and dedup state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- reports/ data/state.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: archive paper monitoring report"
+            git push
+          fi
