@@ -1,0 +1,85 @@
+{
+  "start_session": "2023-01-03",
+  "end_session": "2026-10-27",
+  "config": {
+    "capital": 10000,
+    "allocation": 0.1,
+    "max_positions": 10,
+    "take_profit": 0.1,
+    "slippage_bps": 5.0,
+    "commission": 0.0
+  },
+  "metrics": {
+    "portfolio": {
+      "start_value": 10000,
+      "end_value": 11858.48,
+      "total_return_pct": 18.585,
+      "cagr_pct": 4.586,
+      "max_drawdown_pct": -8.497,
+      "sharpe_rf_zero": 0.726
+    },
+    "SPY": {
+      "start_value": 10000,
+      "end_value": 20993.51,
+      "total_return_pct": 109.935,
+      "cagr_pct": 21.541,
+      "max_drawdown_pct": -18.755,
+      "sharpe_rf_zero": 1.388
+    },
+    "QQQ": {
+      "start_value": 10000,
+      "end_value": 27424.33,
+      "total_return_pct": 174.243,
+      "cagr_pct": 30.392,
+      "max_drawdown_pct": -22.768,
+      "sharpe_rf_zero": 1.421
+    }
+  },
+  "diagnostics": {
+    "prestart_filings": 10,
+    "postend_filings": 0,
+    "duplicate_events": 0,
+    "no_next_session": 0,
+    "no_entry_price": 3,
+    "capacity": 10,
+    "duplicate_held_symbol": 8,
+    "unpriceable_positions": 1,
+    "unaffordable": 0
+  },
+  "submitted_events": 65,
+  "entered_positions": 34,
+  "closed_trades": 34,
+  "win_rate_pct": 91.18,
+  "open_positions": [],
+  "sources": {
+    "provider": "SlushFund (House 2021+, Senate 2024+)",
+    "raw_rows_by_trade_year": {
+      "2021": 4063,
+      "2022": 2688,
+      "2023": 3667,
+      "2024": 2633,
+      "2025": 7402,
+      "2026": 3328
+    },
+    "rejected": {
+      "not_stock_buy": 12660,
+      "bad_dates": 0,
+      "bad_ticker": 42,
+      "bad_official_url": 0,
+      "date_anomaly": 4,
+      "duplicates": 0
+    },
+    "coverage_warning": "Historical CSV may be retroactively corrected; first-report filed DATE is a proxy for public availability.",
+    "form4_rejected": 0
+  },
+  "members": [
+    "nancy pelosi",
+    "ro khanna",
+    "tommy tuberville"
+  ],
+  "price_download_failures": [
+    "SSBK: ValueError",
+    "WBA: ValueError"
+  ],
+  "pricing_caveat": "Yahoo auto-adjusted OHLC approximates split/dividend-adjusted total returns. Intraday limit-touch fills are assumed, not guaranteed. Historical delisted/rebranded symbols can be missing; if so, survivorship bias is possible."
+}
