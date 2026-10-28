@@ -43,6 +43,7 @@ Put an array in data/verified_trades.json. Example **illustration only; do not i
     {
       "politician": "Official full name",
       "symbol": "AAPL",
+      "asset_type": "STOCK",
       "side": "BUY",
       "trade_date": "2026-10-01",
       "disclosure_date": "2026-10-20",
