@@ -14,9 +14,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "political_trade_alpha/**"
-      - "tests/**"
-      - "data/verified_trades.json"
+      - "Real-time/political_trade_alpha/**"
+      - "Real-time/tests/**"
+      - "Real-time/data/verified_trades.json"
       - ".github/workflows/monitor.yml"
 
 permissions:
@@ -42,14 +42,16 @@ jobs:
         with:
           python-version: "3.12"
       - name: Test sizing and DST behavior
+        working-directory: Real-time
         run: python -m unittest discover -s tests -v
       - name: Build simulated signal and headline report
+        working-directory: Real-time
         run: python -m political_trade_alpha.cli
       - name: Save paper report and dedup state
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- reports/ data/state.json
+          git add -- Real-time/reports/ Real-time/data/state.json
           if ! git diff --cached --quiet; then
             git commit -m "chore: archive paper monitoring report"
             git push

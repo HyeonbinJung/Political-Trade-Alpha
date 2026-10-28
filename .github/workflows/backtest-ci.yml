@@ -1,0 +1,27 @@
+name: Backtest unit tests
+
+on:
+  push:
+    branches: [main]
+    paths: ["Backtest/**", ".github/workflows/backtest-ci.yml"]
+  pull_request:
+    paths: ["Backtest/**", "Real-time/**", ".github/workflows/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Historical simulator tests (offline synthetic fixtures)
+        working-directory: Backtest
+        run: python -m unittest discover -s tests -v
+      - name: Existing monitor tests
+        working-directory: Real-time
+        run: python -m unittest discover -s tests -v
