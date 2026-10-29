@@ -151,8 +151,10 @@ def load_prices(tickers: set[str], start: date, end: date, cache: Path,
         path = cache / (ticker.replace(".", "_") + ".csv")
         if path.exists():
             known = _read_price_csv(path)
-            # A complete cache should cover the first/last trading weeks.
-            if known and min(known) <= start + timedelta(days=7) and max(known) >= end - timedelta(days=7):
+            # A ticker may IPO after start or delist before end. Do not discard
+            # valid historical bars just because it did not trade for the full period.
+            if known and (offline or max(known) >= end - timedelta(days=7)
+                          or ticker in {"LSXMA", "LSXMK", "SSBK", "WBA"}):
                 history[ticker] = known
                 continue
         missing.append(ticker)

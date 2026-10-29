@@ -1,0 +1,41 @@
+name: Run SEC and Congress historical study
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Backtest/backtest/study.py"
+      - ".github/workflows/sec-study.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install historical data dependencies
+        run: python -m pip install -r Backtest/requirements.txt
+      - name: Unit tests
+        working-directory: Backtest
+        run: python -m unittest discover -s tests -v
+      - name: Historical SEC/Form4/13F and Congress replay
+        working-directory: Backtest
+        env:
+          SEC_USER_AGENT: PoliticalTradeAlpha research contact@extriver.com
+        run: python -m backtest.study --start 2023-01-01 --end 2026-10-27
+      - name: Upload disclosure snapshot, result table and price cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 2023-2026-sec-exit-sensitivity
+          path: |
+            Backtest/output/study/
+            Backtest/cache/
+          retention-days: 14

@@ -40,7 +40,7 @@ class Bar:
 @dataclass
 class Position:
     symbol: str
-    shares: int
+    shares: float
     entry_date: date
     entry_price: float
     cost: float
@@ -50,18 +50,34 @@ class Position:
 
 
 @dataclass(frozen=True)
+class CorporateAction:
+    """Exchange effective on the first regular session on/after effective_date.
+
+    CASH actions exclude contingent rights; STOCK exchanges use fractional shares
+    rather than guessing cash-in-lieu, flagged as an execution approximation.
+    """
+    symbol: str
+    effective_date: date
+    kind: str
+    source_url: str
+    cash_per_share: float = 0.0
+    successor: str = ""
+    ratio: float = 0.0
+
+
+@dataclass(frozen=True)
 class Config:
     capital: float = 10_000.0
     allocation: float = 0.10
     max_positions: int = 10
-    take_profit: float = 0.10
+    take_profit: float | None = 0.10
     slippage_bps: float = 5.0
     commission: float = 0.0
 
     def __post_init__(self):
         if not (self.capital > 0 and 0 < self.allocation <= 1 and self.max_positions > 0):
             raise ValueError("Invalid capital, allocation, or position limit")
-        if not (0 < self.take_profit < 10 and 0 <= self.slippage_bps < 1000 and self.commission >= 0):
+        if not ((self.take_profit is None or 0 < self.take_profit < 10) and 0 <= self.slippage_bps < 1000 and self.commission >= 0):
             raise ValueError("Invalid target or execution cost")
 
 
@@ -92,8 +108,10 @@ def metrics(values: list[float], trading_days: int) -> dict[str, float]:
 
 
 def backtest(events: list[Event], prices: dict[str, dict[date, Bar]],
-             start: date, end: date, cfg: Config | None = None) -> dict:
+             start: date, end: date, cfg: Config | None = None,
+             actions: dict[str, CorporateAction] | None = None) -> dict:
     cfg = cfg or Config()
+    actions = actions or {}
     if end <= start:
         raise ValueError("End date must follow start date")
     if "SPY" not in prices or "QQQ" not in prices:
@@ -131,14 +149,15 @@ def backtest(events: list[Event], prices: dict[str, dict[date, Bar]],
     cash = cfg.capital
     positions: dict[str, Position] = {}
     last_marks: dict[str, float] = {}
+    missing_streak: dict[str, int] = {}
     trades: list[dict] = []
     curve: list[dict] = []
     slip = cfg.slippage_bps / 10_000
 
-    def sell(symbol: str, today: date, raw_price: float, reason: str) -> None:
+    def sell(symbol: str, today: date, raw_price: float, reason: str, apply_slippage: bool = True) -> None:
         nonlocal cash
         pos = positions.pop(symbol)
-        fill = raw_price * (1 - slip)
+        fill = raw_price * (1 - slip) if apply_slippage else raw_price
         proceeds = pos.shares * fill - cfg.commission
         cash += proceeds
         trades.append({
@@ -152,6 +171,30 @@ def backtest(events: list[Event], prices: dict[str, dict[date, Bar]],
         })
 
     for session_index, day in enumerate(sessions):
+        # Settle company reorganizations before other exits at today's open.
+        # No missing ticker is silently valued at an unrelated current symbol.
+        for symbol, pos in list(positions.items()):
+            action = actions.get(symbol)
+            if action is None or day < action.effective_date:
+                continue
+            if action.kind == "CASH":
+                if action.cash_per_share <= 0:
+                    raise ValueError(f"Invalid cash merger price for {symbol}")
+                sell(symbol, day, action.cash_per_share, "CASH_MERGER", apply_slippage=False)
+                missing_streak.pop(symbol, None)
+            elif action.kind == "STOCK":
+                if action.ratio <= 0 or not action.successor or action.successor in positions:
+                    raise ValueError(f"Unresolvable stock merger for {symbol}")
+                if day not in prices.get(action.successor, {}):
+                    raise ValueError(f"Missing successor price on exchange date {symbol} {day}")
+                positions.pop(symbol)
+                pos.shares *= action.ratio  # fractional/cash-in-lieu approximated
+                pos.entry_price /= action.ratio
+                pos.symbol = action.successor
+                positions[action.successor] = pos
+                missing_streak.pop(symbol, None)
+            else:
+                raise ValueError(f"Unknown action kind for {symbol}: {action.kind}")
         for symbol, pos in list(positions.items()):
             current = prices.get(symbol, {}).get(day)
             expiry = anniversary(pos.entry_date)
@@ -194,19 +237,27 @@ def backtest(events: list[Event], prices: dict[str, dict[date, Bar]],
             bar = prices.get(symbol, {}).get(day)
             if not bar:
                 continue
-            target = pos.entry_price * (1 + cfg.take_profit)
-            if bar.open >= target:
-                sell(symbol, day, bar.open, "TAKE_PROFIT_GAP")
-            elif bar.high >= target:
-                sell(symbol, day, target, "TAKE_PROFIT_LIMIT")
+            if cfg.take_profit is not None:
+                target = pos.entry_price * (1 + cfg.take_profit)
+                if bar.open >= target:
+                    sell(symbol, day, bar.open, "TAKE_PROFIT_GAP")
+                elif bar.high >= target:
+                    sell(symbol, day, target, "TAKE_PROFIT_LIMIT")
 
         holding_value = 0.0
         for symbol, pos in positions.items():
             bar = prices.get(symbol, {}).get(day)
             if bar:
                 last_marks[symbol] = bar.close
+                missing_streak[symbol] = 0
             else:
+                missing_streak[symbol] = missing_streak.get(symbol, 0) + 1
                 diagnostic["unpriceable_positions"] += 1
+                if missing_streak[symbol] >= 5:
+                    raise ValueError(
+                        f"Cannot value {symbol} for five sessions through {day}; "
+                        "provide verified corporate action or historical quotes"
+                    )
             holding_value += pos.shares * last_marks.get(symbol, pos.entry_price)
         nav = cash + holding_value
         first = sessions[0]

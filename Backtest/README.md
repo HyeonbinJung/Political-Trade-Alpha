@@ -59,3 +59,8 @@ python -m backtest.cli --members ALL --start 2023-01-01 --end 2026-10-27
 ```
 
 If no valid events/trades or no SPY/QQQ prices exist, the run **fails**, rather than producing a false 0%-return victory. The output logs skipped entry prices and missing marks; **any missing price should be treated as potential survivorship bias**, not a validated alpha estimate. This is a fixed-rule, point-in-time-approximated research backtest, not investment advice.
+
+
+## Extended SEC and exit-sensitivity study
+
+See [SEC_13F_STUDY.md](SEC_13F_STUDY.md) for the latest research runner, four signal families and four exit rules, delisting data and methodological caveats. The existing backtest CLI remains available.
