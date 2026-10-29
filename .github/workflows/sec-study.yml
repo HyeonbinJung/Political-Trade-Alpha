@@ -2,6 +2,11 @@ name: Run SEC and Congress historical study
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Backtest/backtest/study.py"
+      - ".github/workflows/sec-study.yml"
 
 permissions:
   contents: read
