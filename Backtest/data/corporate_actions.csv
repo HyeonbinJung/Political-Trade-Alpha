@@ -1,0 +1,5 @@
+symbol,effective_date,kind,cash_per_share,successor,ratio,source_url,notes
+WBA,2025-08-28,CASH,11.45,,0,https://www.nasdaqtrader.com/TraderNews.aspx?id=ECA2025-463,Excludes contingent DAP right with uncertain eventual value
+SSBK,2025-07-01,STOCK,0,FBK,0.8,https://www.nasdaqtrader.com/TraderNews.aspx?id=ECA2025-334,Fractional shares approximated
+LSXMA,2024-09-10,STOCK,0,SIRI,0.8375,https://www.nasdaqtrader.com/TraderNews.aspx?id=ECA2024-421,Fractional shares approximated
+LSXMK,2024-09-10,STOCK,0,SIRI,0.8375,https://www.nasdaqtrader.com/TraderNews.aspx?id=ECA2024-421,Fractional shares approximated
